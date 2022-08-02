@@ -8,27 +8,18 @@ import Popup from "reactjs-popup";
 import profile_avatar from "../../assets/replace2.png";
 import svg from "../../assets/favicon.ico";
 import "reactjs-popup/dist/index.css";
-let activePeople = [
-  {
-    id: "1",
-    name: "Amitabh bachhan",
-    sex: "m",
-    img: "",
-  },
-  {
-    id: "2",
-    name: "Nana patekar",
-    sex: "m",
-    img: "",
-  },
-];
+import { io } from "socket.io-client";
+
 function Chats(props) {
   const { state } = useLocation();
+  const socket = useRef();
   const [welcomeMsg, setWelcomeMsg] = useState();
+  const [activePeople, setActivePeople] = useState("");
   const scrollRef = useRef();
   const [isRoleAssigned, setIsRoleAssigned] = useState(false);
   const [buttonValue, setButtonValue] = useState("Click! Me");
   const [msg, setMsg] = useState("");
+  socket.current = io("http://localhost:3001");
   const findUnique = (people, activePeople) => {
     if (activePeople.length === 0) return people;
     const id_to_acive_people_map = {};
@@ -53,7 +44,14 @@ function Chats(props) {
   };
 
   useEffect(() => {
+    socket.current.on("getusers", (users) => {
+      console.log(users);
+      setActivePeople(users);
+    });
+  }, [socket]);
+  useEffect(() => {
     addResponseMessage("Welcome to this **roleplay** chat!");
+
     return () => {
       // Anything in here is fired on component unmount.
       props.dispatch({ type: "cur_role", value: {} });
@@ -63,6 +61,8 @@ function Chats(props) {
 
   const handleNewUserMessage = (newMessage) => {
     console.log(`New message incoming! ${newMessage}`);
+    socket.current.emit("hello", newMessage);
+
     // Now send the message throught the backend API
   };
 
@@ -84,6 +84,9 @@ function Chats(props) {
         <h3>Click! on the Message icon to start the group chat.</h3>
       </>
     );
+
+    /* Add current user in online users list */
+    socket.current.emit("newUser", role);
   };
   // useEffect(() => {
   //   scrollRef.current?.scrollIntoView({ behaviour: "smooth" });
